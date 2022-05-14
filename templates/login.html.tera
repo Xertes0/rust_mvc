@@ -1,0 +1,27 @@
+{% extends "base" %}
+{% block title %}Login{% endblock title %}
+{% block head %}
+	{{ super() }}
+{% endblock head %}
+
+{% block content %}
+<div class="col-md-4 mx-auto">
+	<form method="post">
+		<div class="mb-3">
+			<label for="inputName" class="form-label">Imię lub pseudonim</label>
+			<input name="name" type="text" class="form-control" id="inputName" aria-describedby="nameHelp">
+			<div id="nameHelp" class="form-text">Nie może zawierać znaków specjalnych</div>
+		</div>
+		<div class="mb-3">
+			<label for="inputEmail" class="form-label">Adres email</label>
+			<input name="email" type="email" class="form-control" id="inputEmail" placeholder="example@example.com">
+		</div>
+		<div class="mb-3">
+			<label for="inputPassword" class="form-label">Hasło</label>
+			<input name="password" type="password" class="form-control" id="inputPassword" aria-describedby="passwordHelp">
+			<div id="passwordHelp" class="form-text">Minimum 8 znaków</div>
+		</div>
+		<button type="submit" class="btn btn-primary">Zaloguj</button>
+	</form>
+</div>
+{% endblock content %}

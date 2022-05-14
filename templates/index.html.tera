@@ -1,0 +1,9 @@
+{% extends "base" %}
+{% block title %}Strona Główna{% endblock title %}
+{% block head %}
+	{{ super() }}
+{% endblock head %}
+
+{% block content %}
+<h1>Strona główna</h1>
+{% endblock content %}
