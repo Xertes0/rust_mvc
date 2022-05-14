@@ -19,7 +19,7 @@
 			</button>
 			<div class="collapse navbar-collapse" id="headerNavbar">
 				<ul class="navbar-nav me-auto mb-2 mb-lg-0">
-					{% if is_admin %}
+					{% if user.is_admin %}
 						<li class="nav-item">
 							<a class="nav-link active" href="/prod/list">Edycja produktów</a>
 						</li>
@@ -27,22 +27,22 @@
 							<a class="nav-link active" href="/users/list">Edycja użytkowników</a>
 						</li>
 					{% endif %}
-					{% if logged_in %}
+					{% if user.logged_in %}
 						<li class="nav-item">
-							<a class="nav-link active" href="/logout">Wyloguj</a>
+							<a class="nav-link active" href="/auth/logout">Wyloguj</a>
 						</li>
 					{% else %}
 						<li class="nav-item">
-							<a class="nav-link active" href="/login">Zaloguj</a>
+							<a class="nav-link active" href="/auth/login">Zaloguj</a>
 						</li>
 						<li class="nav-item">
-							<a class="nav-link active" href="/login">Zarejestruj</a>
+							<a class="nav-link active" href="/auth/register">Zarejestruj</a>
 						</li>
 					{% endif %}
 				</ul>
 				<span class="navbar-text">
-					{% if name %}
-						{{ name }}
+					{% if user.name %}
+						{{ user.name }}
 					{% else %}
 						{% block name %}Nie zalogowany{% endblock name %}
 					{% endif %}
