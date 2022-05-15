@@ -877,10 +877,20 @@ version = "0.1.0"
 dependencies = [
  "diesel",
  "dotenv",
+ "locale",
  "rocket",
  "rocket_dyn_templates",
  "serde",
  "sha2",
+]
+
+[[package]]
+name = "locale"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5fdbe492a9c0238da900a1165c42fc5067161ce292678a6fe80921f30fe307fd"
+dependencies = [
+ "libc",
 ]
 
 [[package]]

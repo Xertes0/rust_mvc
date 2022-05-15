@@ -8,7 +8,7 @@
 <div class="col-md-4 mx-auto">
 	<form method="post">
 		<div class="mb-3">
-			<label for="inputName" class="form-label">Imię lub pseudonim</label>
+			<label for="inputName" class="form-label">Imię</label>
 			<input name="name" type="text" class="form-control" id="inputName" aria-describedby="nameHelp">
 			<div id="nameHelp" class="form-text">Nie może zawierać znaków specjalnych</div>
 		</div>

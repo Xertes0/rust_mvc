@@ -1,0 +1,29 @@
+{% extends "base" %}
+{% block title %}Koszyk{% endblock title %}
+{% block head %}
+	{{ super() }}
+{% endblock head %}
+
+{% block content %}
+{% if entries | length == 0 %}
+<div style="text-align: center;">
+	<h2>Koszyk jest pusty</h2>
+	<a href="/products/list">Powróć do listy produktów</a>
+</div>
+{% endif %}
+<div class="row row-cols-2 row-cols-md-4 g-8">
+	{% for prod in entries %}
+	<div class="col">
+		<h5 class="card-header">{{ prod.item.name }}{% if prod.count > 1 %} * {{prod.count}}{% endif %}</h5>
+		<div class="card">
+			<img src="{{ prod.item.image }}" class="card-img-top" alt="Miniatura" style="height: 22rem;" />
+			<div class="card-body">
+				<h5 class="card-title">{{ prod.item.price / 100 | localise }} zł</h5>
+				<p class="card-text">{{ prod.item.description | safe }}</p>
+				<a href="/products/delete_from_cart/{{ prod.item.id }}" class="btn btn-primary">Usuń</a>
+			</div>
+		</div>
+	</div>
+	{% endfor %}
+</div>
+{% endblock content %}

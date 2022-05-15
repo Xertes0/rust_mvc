@@ -1,12 +1,14 @@
-use rocket::{get, Route, routes};
-use rocket_dyn_templates::{Template, context};
+use rocket::{get, Route, routes, response::Redirect, uri};
 
-use crate::guards::UserGuard;
+//#[get("/")]
+//fn index(user: Option<UserGuard>) -> Template {
+//    // TODO don't clone
+//    Template::render("index", context!{ user: user.map(|x| (*x).clone()) })
+//}
 
 #[get("/")]
-fn index(user: Option<UserGuard>) -> Template {
-    // TODO don't clone
-    Template::render("index", context!{ user: user.map(|x| (*x).clone()) })
+fn index() -> Redirect {
+    Redirect::to(uri!("/products/list"))
 }
 
 pub fn get_routes() -> Vec<Route> {

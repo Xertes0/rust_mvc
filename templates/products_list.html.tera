@@ -1,0 +1,23 @@
+{% extends "base" %}
+{% block title %}Produkty{% endblock title %}
+{% block head %}
+	{{ super() }}
+{% endblock head %}
+
+{% block content %}
+<div class="row row-cols-2 row-cols-md-4 g-8">
+	{% for prod in products %}
+	<div class="col">
+		<h5 class="card-header">{{ prod.name }}</h5>
+		<div class="card">
+			<img src="{{ prod.image }}" class="card-img-top" alt="Miniatura" style="height: 22rem;" />
+			<div class="card-body">
+				<h5 class="card-title">{{ prod.price / 100 | localise }} zł</h5>
+				<p class="card-text">{{ prod.description | safe }}</p>
+				<a href="/products/to_cart/{{ prod.id }}" class="btn btn-primary">Kup</a>
+			</div>
+		</div>
+	</div>
+	{% endfor %}
+</div>
+{% endblock content %}
