@@ -1,5 +1,5 @@
 {% extends "base" %}
-{% block title %}Login{% endblock title %}
+{% block title %}Zaloguj{% endblock title %}
 {% block head %}
 	{{ super() }}
 {% endblock head %}

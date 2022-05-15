@@ -19,15 +19,15 @@
 			</button>
 			<div class="collapse navbar-collapse" id="headerNavbar">
 				<ul class="navbar-nav me-auto mb-2 mb-lg-0">
-					{% if user.is_admin %}
+					{% if user and user.privilege >= 1000 %}
 						<li class="nav-item">
-							<a class="nav-link active" href="/prod/list">Edycja produktów</a>
+							<a class="nav-link active" href="/products/list">Edycja produktów</a>
 						</li>
 						<li class="nav-item">
 							<a class="nav-link active" href="/users/list">Edycja użytkowników</a>
 						</li>
 					{% endif %}
-					{% if user.logged_in %}
+					{% if user %}
 						<li class="nav-item">
 							<a class="nav-link active" href="/auth/logout">Wyloguj</a>
 						</li>

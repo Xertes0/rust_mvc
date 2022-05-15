@@ -1,0 +1,31 @@
+{% extends "base" %}
+{% block title %}Użytkownicy{% endblock title %}
+{% block head %}
+	{{ super() }}
+{% endblock head %}
+
+{% block content %}
+<table class="table">
+	<thead>
+		<th scope="col">Id</th>
+		<th scope="col">Imię</th>
+		<th scope="col">Email</th>
+		<th scope="col">Poziom uprawnień</th>
+		<th scope="col">Akcja</th>
+	</thead>
+	<tbody>
+		{% for user in users %}
+		<tr>
+			<th scope="row">{{ user.id }}</th>
+			<td>{{ user.name }}</td>
+			<td>{{ user.email }}</td>
+			<td>{{ user.privilege }}</td>
+			<td>
+				<a href="/users/edit/{{ user.id }}" role="button" class="btn btn-link">Edytuj</a>
+				<a href="/users/delete/{{ user.id }}" role="button" class="btn btn-link">Usuń</a>
+			</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endblock content %}

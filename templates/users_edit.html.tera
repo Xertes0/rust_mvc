@@ -1,0 +1,28 @@
+{% extends "base" %}
+{% block title %}Edycja użytkownika{% endblock title %}
+{% block head %}
+	{{ super() }}
+{% endblock head %}
+
+{% block content %}
+<div class="col-md-4 mx-auto">
+	<form method="post">
+		<div class="mb-3">
+			<label for="inputName" class="form-label">Imię lub pseudonim</label>
+			<input name="name" type="text" class="form-control" id="inputName" aria-describedby="nameHelp" placeholder="{{ edit_user.name }}" value="{{ edit_user.name }}">
+			<div id="nameHelp" class="form-text">Nie może zawierać znaków specjalnych</div>
+		</div>
+		<div class="mb-3">
+			<label for="inputEmail" class="form-label">Adres email</label>
+			<input name="email" type="email" class="form-control" id="inputEmail" placeholder="{{ edit_user.email }}" value="{{ edit_user.email }}">
+		</div>
+		<div class="mb-3">
+			<label for="inputPrivilege" class="form-label">Poziom uprawnień</label>
+			<input name="privilege" type="number" class="form-control" id="inputPrivilege" placeholder="{{ edit_user.privilege }}" value="{{ edit_user.privilege }}">
+			<div id="privilegeHelp" class="form-text">1 - Użytkownik<br>1000 - Administrator</div>
+		</div>
+		<button type="submit" class="btn btn-primary">Edytuj</button>
+		<a href="/users/list" role="button" class="btn btn-secondary">Anuluj</a>
+	</form>
+</div>
+{% endblock content %}

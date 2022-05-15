@@ -1,11 +1,12 @@
-use rocket::{http::CookieJar, get, Route, routes};
+use rocket::{get, Route, routes};
 use rocket_dyn_templates::{Template, context};
 
-use super::UserContext;
+use crate::guards::UserGuard;
 
 #[get("/")]
-fn index(cookies: &CookieJar<'_>) -> Template {
-    Template::render("index", context!{ user: UserContext::from_cookiejar(cookies) })
+fn index(user: Option<UserGuard>) -> Template {
+    // TODO don't clone
+    Template::render("index", context!{ user: user.map(|x| (*x).clone()) })
 }
 
 pub fn get_routes() -> Vec<Route> {

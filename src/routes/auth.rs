@@ -3,8 +3,8 @@ use rocket::{form::Form, {FromForm, http::{CookieJar, Cookie}, response::{Flash,
 use rocket_dyn_templates::{Template, context};
 use sha2::{Sha256, Digest};
 
-use crate::{db_pool::DbPool, models::{User, NewUser}, schema::users};
-use super::UserContext;
+use crate::{db_pool::DbPool, models::{User, NewUser}, schema::users, guards::{UserGuard, InnerUser}};
+//use super::UserContext;
 
 #[derive(FromForm)]
 struct LoginForm<'a> {
@@ -22,8 +22,8 @@ struct RegisterForm<'a> {
 // Login
 
 #[get("/login?<failed>")]
-fn login(cookies: &CookieJar<'_>, failed: Option<bool>) -> Template {
-    Template::render("login", context! { user: UserContext::from_cookiejar(cookies), failed: failed})
+fn login(user: Option<UserGuard>, failed: Option<bool>) -> Template {
+    Template::render("login", context! { user: user.map(|x| (*x).clone()), failed: failed})
 }
 
 #[post("/login", data = "<form>")]
@@ -40,23 +40,30 @@ fn login_post(form: Form<LoginForm<'_>>, cookies: &CookieJar<'_>, mut db: DbPool
             Err(err) => panic!("{}", err)
         };
 
-    cookies.add_private(Cookie::new("logged_in", "true"));
     cookies.add_private(Cookie::new("user_id", found.id.to_string()));
     cookies.add_private(Cookie::new("name", found.name));
-    cookies.add_private(Cookie::new("is_admin", if found.privilege >= 1000 { "true" } else { "false" }));
+    cookies.add_private(Cookie::new("email", found.email));
+    cookies.add_private(Cookie::new("privilege", found.privilege.to_string()));
 
     Flash::success(Redirect::to(uri!("/")), "Successfully logged in")
 }
 
 // Register
 
-#[get("/register")]
-fn register(cookies: &CookieJar<'_>) -> Template {
-    Template::render("register", context!{ user: UserContext::from_cookiejar(cookies) })
+#[get("/register?<failed>")]
+fn register(user: Option<UserGuard>, failed: Option<bool>) -> Template {
+    Template::render("register", context!{ user: user.map(|x| Some((*x).clone())), failed: failed })
 }
 
 #[post("/register", data = "<form>")]
 fn register_post(form: Form<RegisterForm<'_>>, cookies: &CookieJar<'_>, mut db: DbPool) -> Flash<Redirect> {
+    let user: Result<User, diesel::result::Error> = users::table
+        .filter(users::email.eq(form.email))
+        .first(&mut *db);
+    if let Ok(_) = user {
+        return Flash::error(Redirect::to(uri!("/auth", register(failed = Some(true)))), "User already exists")
+    }
+
     let mut hasher = Sha256::new();
     hasher.update(form.password);
     let hash = format!("{:x}", hasher.finalize());
@@ -73,20 +80,17 @@ fn register_post(form: Form<RegisterForm<'_>>, cookies: &CookieJar<'_>, mut db: 
         .unwrap();
     let user: User = users::table.find(sql("last_insert_rowid()")).get_result(&mut *db).unwrap();
 
-    cookies.add_private(Cookie::new("logged_in", "true"));
     cookies.add_private(Cookie::new("user_id", user.id.to_string()));
     cookies.add_private(Cookie::new("name", user.name.to_owned()));
-    cookies.add_private(Cookie::new("is_admin", "false"));
+    cookies.add_private(Cookie::new("email", user.email.to_owned()));
+    cookies.add_private(Cookie::new("privilege", user.privilege.to_string()));
 
     Flash::success(Redirect::to(uri!("/")), "Successfully logged in")
 }
 
 #[get("/logout")]
-fn logout(cookies: &CookieJar<'_>) -> Flash<Redirect> {
-    cookies.remove_private(Cookie::named("logged_in"));
-    cookies.remove_private(Cookie::named("user_id"));
-    cookies.remove_private(Cookie::named("name"));
-    cookies.remove_private(Cookie::named("is_admin"));
+fn logout(cookies: &CookieJar) -> Flash<Redirect> {
+    InnerUser::remove_cookies(cookies);
     Flash::success(Redirect::to(uri!("/")), "Successfully logged out")
 }
 

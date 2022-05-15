@@ -1,5 +1,5 @@
 {% extends "base" %}
-{% block title %}Login{% endblock title %}
+{% block title %}Zarejestruj{% endblock title %}
 {% block head %}
 	{{ super() }}
 {% endblock head %}
@@ -22,6 +22,11 @@
 			<div id="passwordHelp" class="form-text">Minimum 8 znaków</div>
 		</div>
 		<button type="submit" class="btn btn-primary">Zarejestruj</button>
+		{% if failed %}
+			<div class="invalid-feedback" style="display: block;">
+				Użytkownik z takim adresem email już istnieje
+			</div>
+		{% endif %}
 	</form>
 </div>
 {% endblock content %}
