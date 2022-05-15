@@ -1,11 +1,11 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 
 use diesel::{RunQueryDsl, query_dsl::methods::FilterDsl, ExpressionMethods};
-use rocket::{Route, routes, get, response::{Redirect, Flash}, uri, http::{CookieJar, Cookie}};
+use rocket::{Route, routes, get, response::{Redirect, Flash}, uri, http::{CookieJar, Cookie}, FromForm, post, form::Form, fs::TempFile};
 use rocket_dyn_templates::{Template, context};
 use serde::Serialize;
 
-use crate::{guards::UserGuard, db_pool::DbPool, schema, models};
+use crate::{guards::{UserGuard, AdminUserGuard}, db_pool::DbPool, schema, models};
 
 #[get("/")]
 fn index() -> Redirect {
@@ -109,6 +109,97 @@ fn delete_from_cart(id: i32, cookies: &CookieJar) -> Flash<Redirect> {
     }
 }
 
+#[get("/delete/<id>")]
+fn delete(id: i32, _user: AdminUserGuard, mut db: DbPool) -> Flash<Redirect> {
+    match diesel::delete(schema::products::table.filter(schema::products::id.eq(id)))
+        .execute(&mut *db) {
+            Ok(_) => {
+                Flash::success(Redirect::to(uri!("/products", list())), "Successfully deleted one product")
+            },
+            Err(_) => {
+                Flash::error(Redirect::to(uri!("/products", list())), "Could not delete the product")
+            }
+        }
+}
+
+#[get("/edit/<id>")]
+fn edit(id: i32, user: AdminUserGuard, mut db: DbPool) -> Template {
+    let edit_prod: models::Product = match schema::products::table
+        .filter(schema::products::id.eq(id))
+        .first(&mut *db) {
+            Ok(prod) => prod,
+            Err(err) => panic!("{err}")
+        };
+
+    Template::render("products_edit", context! {user: &*user, edit_prod: edit_prod})
+}
+
+#[derive(FromForm)]
+struct NewEditForm<'a> {
+    name: &'a str,
+    image_url: &'a str,
+    image_file: TempFile<'a>,
+    price: f32,
+    description: &'a str,
+}
+
+#[post("/edit/<id>", data="<form>")]
+async fn edit_post(id: i32, mut form: Form<NewEditForm<'_>>, _user: AdminUserGuard, mut db: DbPool) -> Flash<Redirect> {
+    let path_str = format!("static/product_images/{}", id);
+    let image = match form.image_file.len() {
+        0 => form.image_url.to_owned(),
+        _ => {
+            let path = Path::new(&path_str);
+            form.image_file.copy_to(path).await.unwrap(); // can use persist_to if target path is
+                                                          // on the mount point
+            format!("/{}", path_str)
+        }
+    };
+
+    match diesel::update(schema::products::table.filter(schema::products::id.eq(id)))
+        .set((
+                schema::products::name.eq(form.name),
+                schema::products::image.eq(image),
+                schema::products::price.eq((form.price * 100.0) as i32),
+                schema::products::description.eq(form.description)
+            ))
+        .execute(&mut *db) {
+            Ok(_) => Flash::success(Redirect::to(uri!("/products", list())), "Successfully updated one product"),
+            Err(_) => Flash::error(Redirect::to(uri!("/products", list())), "Could not update the product")
+        }
+}
+
+#[get("/new")]
+fn new(user: AdminUserGuard) -> Template {
+    Template::render("products_new", context! {user: &*user})
+}
+
+#[post("/new", data="<form>")]
+async fn new_post(mut form: Form<NewEditForm<'_>>, mut db: DbPool) -> Flash<Redirect> {
+    let image = match form.image_file.len() {
+        0 => form.image_url.to_owned(),
+        _ => {
+            let path_str = format!("static/product_images/{}", form.image_file.name().unwrap());
+            let path = Path::new(&path_str);
+            form.image_file.copy_to(path).await.unwrap(); // can use persist_to if target path is
+                                                          // on the mount point
+            format!("/{}", path_str)
+        }
+    };
+
+    match diesel::insert_into(schema::products::table)
+        .values((
+                schema::products::name.eq(form.name),
+                schema::products::image.eq(image),
+                schema::products::price.eq((form.price * 100.0) as i32),
+                schema::products::description.eq(form.description)
+            ))
+        .execute(&mut *db) {
+            Ok(_) => Flash::success(Redirect::to(uri!("/products", list())), "Successfully inserted one product"),
+            Err(_) => Flash::error(Redirect::to(uri!("/products", list())), "Could not insert product")
+        }
+}
+
 pub fn get_routes() -> Vec<Route> {
-    routes![index, list, to_cart, cart, delete_from_cart]
+    routes![index, list, to_cart, cart, delete_from_cart, delete, edit, edit_post, new, new_post]
 }

@@ -19,14 +19,19 @@
 			<div class="collapse navbar-collapse" id="headerNavbar">
 				<ul class="navbar-nav me-auto mb-2 mb-lg-0">
 					<li class="nav-item">
+						<a class="nav-link active" href="/products/list">Produkty</a>
+					</li>
+					{% if user and user.privilege >= 1000 %}
+						<li class="nav-item">
+							<a class="nav-link active" href="/products/new">Nowy produkt</a>
+						</li>
+					{% endif %}
+					<li class="nav-item">
 						<a class="nav-link active" href="/products/cart">Koszyk</a>
 					</li>
 					{% if user and user.privilege >= 1000 %}
 						<li class="nav-item">
-							<a class="nav-link active" href="/products/list">Edycja produktów</a>
-						</li>
-						<li class="nav-item">
-							<a class="nav-link active" href="/users/list">Edycja użytkowników</a>
+							<a class="nav-link active" href="/users/list">Użytkownicy</a>
 						</li>
 					{% endif %}
 					{% if user %}

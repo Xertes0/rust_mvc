@@ -15,6 +15,10 @@
 				<h5 class="card-title">{{ prod.price / 100 | localise }} zł</h5>
 				<p class="card-text">{{ prod.description | safe }}</p>
 				<a href="/products/to_cart/{{ prod.id }}" class="btn btn-primary">Kup</a>
+				{% if user and user.privilege >= 1000 %}
+				<a href="/products/edit/{{ prod.id }}" class="btn btn-secondary">Edytuj</a>
+				<a href="/products/delete/{{ prod.id }}" class="btn btn-secondary">Usuń</a>
+				{% endif %}
 			</div>
 		</div>
 	</div>

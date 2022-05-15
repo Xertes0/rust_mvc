@@ -1,2 +1,3 @@
 /target
+/static/product_images/*
 database.sqlite

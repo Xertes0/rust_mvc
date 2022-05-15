@@ -1,8 +1,8 @@
 use dotenv::dotenv;
 use diesel::{r2d2::{ConnectionManager, Pool}, SqliteConnection};
-use rocket::launch;
+use rocket::{launch, fs::NamedFile, get, routes, data::{Limits, ToByteUnit}};
 use rocket_dyn_templates::{Template, tera::{Value, Filter, to_value}};
-use std::env;
+use std::{env, path::{PathBuf, Path}};
 
 pub mod schema;
 pub mod db_pool;
@@ -23,6 +23,11 @@ impl Filter for NumberFilter {
     }
 }
 
+#[get("/<file..>")]
+async fn static_file(file: PathBuf) -> Option<NamedFile> {
+    NamedFile::open(Path::new("static/").join(file)).await.ok()
+}
+
 #[launch]
 fn rocket() -> _ {
     dotenv().ok();
@@ -30,7 +35,13 @@ fn rocket() -> _ {
     let connection = ConnectionManager::<SqliteConnection>::new(&env::var("DATABASE_URL").expect("No DATABASE_URL env var"));
     let pool = Pool::new(connection).expect("db pool");
 
-    rocket::build()
+    let limits = Limits::default()
+        .limit("file", 5.megabytes());
+
+    let figment = rocket::Config::figment()
+        .merge(("limits", limits));
+
+    rocket::custom(figment)
         .manage(pool)
         //.attach(Template::fairing())
         .attach(Template::custom(|engines| {
@@ -40,4 +51,5 @@ fn rocket() -> _ {
         .mount("/auth", routes::auth::get_routes())
         .mount("/users", routes::users::get_routes())
         .mount("/products", routes::products::get_routes())
+        .mount("/static", routes![static_file])
 }
