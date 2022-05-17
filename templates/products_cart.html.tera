@@ -1,5 +1,5 @@
 {% extends "base" %}
-{% block title %}Koszyk{% endblock title %}
+{% block title %}Koszyk ({{ entries | length }}){% endblock title %}
 {% block head %}
 	{{ super() }}
 {% endblock head %}
@@ -10,7 +10,10 @@
 	<h2>Koszyk jest pusty</h2>
 	<a href="/products/list">Powróć do listy produktów</a>
 </div>
-{% endif %}
+{% else %}
+<div style="text-align: center; margin-bottom: 1.5rem;">
+	<h2>Wartość koszyka: {{ total / 100 | localise }} zł</h2>
+</div>
 <div class="row row-cols-2 row-cols-md-4 g-8">
 	{% for prod in entries %}
 	<div class="col">
@@ -18,7 +21,7 @@
 		<div class="card">
 			<img src="{{ prod.item.image }}" class="card-img-top" alt="Miniatura" style="height: 22rem;" />
 			<div class="card-body">
-				<h5 class="card-title">{{ prod.item.price / 100 | localise }} zł</h5>
+				<h5 class="card-title">{{ (prod.item.price / 100) * prod.count | localise }} zł</h5>
 				<p class="card-text">{{ prod.item.description | safe }}</p>
 				<a href="/products/delete_from_cart/{{ prod.item.id }}" class="btn btn-primary">Usuń</a>
 			</div>
@@ -26,4 +29,9 @@
 	</div>
 	{% endfor %}
 </div>
+<div style="text-align: center;" class="my-5">
+	<a href="/products/cart/clear">Wyczyść koszyk</a><br>
+	<a href="/products/list">Powróć do listy produktów</a>
+</div>
+{% endif %}
 {% endblock content %}

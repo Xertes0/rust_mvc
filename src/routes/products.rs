@@ -1,7 +1,7 @@
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, path::{Path, PathBuf}};
 
 use diesel::{RunQueryDsl, query_dsl::methods::FilterDsl, ExpressionMethods};
-use rocket::{Route, routes, get, response::{Redirect, Flash}, uri, http::{CookieJar, Cookie}, FromForm, post, form::Form, fs::TempFile};
+use rocket::{Route, routes, get, response::{Redirect, Flash}, uri, http::{CookieJar, Cookie}, FromForm, post, form::Form, fs::{TempFile, NamedFile}};
 use rocket_dyn_templates::{Template, context};
 use serde::Serialize;
 
@@ -41,6 +41,7 @@ struct CartEntry {
 
 #[get("/cart")]
 fn cart(user: Option<UserGuard>, cookies: &CookieJar, mut db: DbPool) -> Template {
+    let mut total = 0;
     let entries = match cookies.get("cart") {
         Some(cookie) => {
             let mut map = HashMap::<i32, i32>::new();
@@ -56,9 +57,11 @@ fn cart(user: Option<UserGuard>, cookies: &CookieJar, mut db: DbPool) -> Templat
 
             let mut entries = Vec::new();
             for (id, count) in map.iter() {
+                let item = items.iter().find(|x| x.id == *id).unwrap();
+                total += item.price * count;
                 entries.push(CartEntry {
                     count: *count,
-                    item: items.iter().find(|x| x.id == *id).unwrap().clone()
+                    item: item.clone()
                 })
             }
 
@@ -71,7 +74,13 @@ fn cart(user: Option<UserGuard>, cookies: &CookieJar, mut db: DbPool) -> Templat
         }
     };
 
-    Template::render("products_cart", context! {user: user.map(|x| (*x).clone()), entries: entries})
+    Template::render("products_cart", context! {user: user.map(|x| (*x).clone()), entries, total})
+}
+
+#[get("/cart/clear")]
+fn cart_clear(cookies: &CookieJar) -> Redirect {
+    cookies.remove(Cookie::named("cart"));
+    Redirect::to(uri!("/products", cart()))
 }
 
 #[get("/delete_from_cart/<id>")]
@@ -145,15 +154,14 @@ struct NewEditForm<'a> {
 
 #[post("/edit/<id>", data="<form>")]
 async fn edit_post(id: i32, mut form: Form<NewEditForm<'_>>, _user: AdminUserGuard, mut db: DbPool) -> Flash<Redirect> {
-    let path_str = format!("static/product_images/{}", id);
-    let image = match form.image_file.len() {
-        0 => form.image_url.to_owned(),
-        _ => {
-            let path = Path::new(&path_str);
-            form.image_file.copy_to(path).await.unwrap(); // can use persist_to if target path is
-                                                          // on the mount point
-            format!("/{}", path_str)
-        }
+    let image = if form.image_file.name().is_some() {
+        let path_str = format!("static/thumbnails/{}", id);
+        // Can use persist_to if target path is on the mount point
+        form.image_file.copy_to(Path::new(&path_str)).await.unwrap();
+
+        path_str
+    } else {
+        form.image_url.to_owned()
     };
 
     match diesel::update(schema::products::table.filter(schema::products::id.eq(id)))
@@ -176,15 +184,14 @@ fn new(user: AdminUserGuard) -> Template {
 
 #[post("/new", data="<form>")]
 async fn new_post(mut form: Form<NewEditForm<'_>>, mut db: DbPool) -> Flash<Redirect> {
-    let image = match form.image_file.len() {
-        0 => form.image_url.to_owned(),
-        _ => {
-            let path_str = format!("static/product_images/{}", form.image_file.name().unwrap());
-            let path = Path::new(&path_str);
-            form.image_file.copy_to(path).await.unwrap(); // can use persist_to if target path is
-                                                          // on the mount point
-            format!("/{}", path_str)
-        }
+    let image = if let Some(image_name) = form.image_file.name() {
+        let path_str = format!("static/thumbnails/{}", image_name);
+        // Can use persist_to if target path is on the mount point
+        form.image_file.copy_to(Path::new(&path_str)).await.unwrap();
+
+        path_str
+    } else {
+        form.image_url.to_owned()
     };
 
     match diesel::insert_into(schema::products::table)
@@ -200,6 +207,11 @@ async fn new_post(mut form: Form<NewEditForm<'_>>, mut db: DbPool) -> Flash<Redi
         }
 }
 
+#[get("/static/<file..>")]
+async fn static_files(file: PathBuf) -> Option<NamedFile> {
+    NamedFile::open(Path::new("static/").join(file)).await.ok()
+}
+
 pub fn get_routes() -> Vec<Route> {
-    routes![index, list, to_cart, cart, delete_from_cart, delete, edit, edit_post, new, new_post]
+    routes![index, list, to_cart, cart, cart_clear, delete_from_cart, delete, edit, edit_post, new, new_post, static_files]
 }

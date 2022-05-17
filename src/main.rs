@@ -1,8 +1,8 @@
 use dotenv::dotenv;
 use diesel::{r2d2::{ConnectionManager, Pool}, SqliteConnection};
-use rocket::{launch, fs::NamedFile, get, routes, data::{Limits, ToByteUnit}};
-use rocket_dyn_templates::{Template, tera::{Value, Filter, to_value}};
-use std::{env, path::{PathBuf, Path}};
+use rocket::{launch, data::{Limits, ToByteUnit}};
+use rocket_dyn_templates::{Template, tera::{self, Value, Filter, to_value}};
+use std::{env, collections::HashMap};
 
 pub mod schema;
 pub mod db_pool;
@@ -10,22 +10,17 @@ pub mod guards;
 mod models;
 mod routes;
 
-struct NumberFilter;
-impl Filter for NumberFilter {
-    fn filter(&self, value: &Value, _: &std::collections::HashMap<String, Value>) -> rocket_dyn_templates::tera::Result<Value> {
+struct Localise;
+impl Filter for Localise {
+    fn filter(&self, value: &Value, _: &HashMap<String, Value>) -> tera::Result<Value> {
         match value {
             Value::Number(num) => {
                 let loc = locale::Numeric::new(",", " ");
                 Ok(to_value(loc.format_float(num, 2)).unwrap())
             },
-            _ => { panic!("Can only use numbers") }
+            _ => panic!("Can only use numbers")
         }
     }
-}
-
-#[get("/<file..>")]
-async fn static_file(file: PathBuf) -> Option<NamedFile> {
-    NamedFile::open(Path::new("static/").join(file)).await.ok()
 }
 
 #[launch]
@@ -45,11 +40,10 @@ fn rocket() -> _ {
         .manage(pool)
         //.attach(Template::fairing())
         .attach(Template::custom(|engines| {
-            engines.tera.register_filter("localise", NumberFilter)
+            engines.tera.register_filter("localise", Localise)
         }))
         .mount("/", routes::index::get_routes())
         .mount("/auth", routes::auth::get_routes())
         .mount("/users", routes::users::get_routes())
         .mount("/products", routes::products::get_routes())
-        .mount("/static", routes![static_file])
 }
